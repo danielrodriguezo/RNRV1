@@ -3,148 +3,151 @@ package tk.rock_n_rolo.rocknrolov1;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.os.Build;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Html;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ShareActionProvider;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private ViewPager mSlideViewPager;
-    private LinearLayout mDotlayout;
-
-    private TextView[] mDots;
-
-    private SliderAdapter sliderAdapter;
-
-    private Button mNextBtn;
-    private Button mBackBtn;
-
-    private int mCurrentPage;
+    private ViewPager viewPager;
+    private LinearLayout layoutDot;
+    private TextView[] dotstv;
+    private int[] layouts;
+    private Button btnSkip;
+    private Button btnNext;
+    private SliderAdapter pagerAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if(!isFirstTimeStartApp()){
+            startLoginActivity();
+            finish();
+        }
+        setStatusBarTransparent();
+
         setContentView(R.layout.activity_main);
 
-        mSlideViewPager = (ViewPager) findViewById(R.id.slideViewPager);
-        mDotlayout = (LinearLayout) findViewById(R.id.dotsLayout);
+        viewPager = findViewById(R.id.view_pager);
+        layoutDot = findViewById(R.id.dotLayout);
+        btnNext = findViewById(R.id.btn_next);
+        btnSkip = findViewById(R.id.btn_skip);
 
-        mNextBtn = (Button) findViewById(R.id.nextBtn);
-        mBackBtn = (Button) findViewById(R.id.prevBtn);
-
-        sliderAdapter = new SliderAdapter(this);
-
-        mSlideViewPager.setAdapter(sliderAdapter);
-
-        addDotsIndicator(0);
-
-        mSlideViewPager.addOnPageChangeListener(viewListener);
-
-        //OnClickListeners
-
-        mNextBtn.setOnClickListener(new View.OnClickListener(){
-
-            @Override
-            public void onClick(View view) {
-                mSlideViewPager.setCurrentItem(mCurrentPage + 1);
-            }
-        });
-
-       mBackBtn.setOnClickListener(new View.OnClickListener(){
-
+        //Cuando el usuario de click en "Omitir" se inicia el LoginActivity
+        btnSkip.setOnClickListener(new View.OnClickListener(){
 
             @Override
             public void onClick(View v) {
-                mSlideViewPager.setCurrentItem(mCurrentPage - 1);
+                startLoginActivity();
             }
         });
-    }
 
-    private void startMainActivity(){
-        startActivity(new Intent(MainActivity.this,LoginActivity.class));
-    }
+        btnNext.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int currentPage = viewPager.getCurrentItem()+1;
+                if (currentPage<layouts.length){
+                    //Avanzar a la siguiente página
+                    viewPager.setCurrentItem(currentPage);
+                } else{
+                    startLoginActivity();
+                }
+            }
+        });
 
-    public void addDotsIndicator(int position){
+        layouts = new int[]{R.layout.slider_1, R.layout.slider_2,R.layout.slider_3,R.layout.slider_4};
+        pagerAdapter = new SliderAdapter(layouts,getApplicationContext());
+        viewPager.setAdapter(pagerAdapter);
 
-        mDots = new TextView[3];
-        mDotlayout.removeAllViews();
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener(){
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
 
-        for (int i=0; i < mDots.length; i++){
-
-            mDots[i] = new TextView(this);
-            mDots[i].setText(Html.fromHtml("&#8226;"));
-            mDots[i].setTextSize(35);
-            mDots[i].setTextColor(getResources().getColor(R.color.colorTransparentWhite));
-
-            mDotlayout.addView(mDots[i]);
-
-        }
-
-        if (mDots.length > 0){
-            mDots[position].setTextColor(getResources().getColor(R.color.colorWhite));
-        }
-
-    }
-
-    ViewPager.OnPageChangeListener viewListener = new ViewPager.OnPageChangeListener() {
-        @Override
-        public void onPageScrolled(int i, float v, int il) {
-
-        }
-
-        @Override
-        public void onPageSelected(int i) {
-
-            addDotsIndicator(i);
-
-            mCurrentPage = i;
-
-            if (i == 0){
-                mNextBtn.setEnabled(true);
-                mBackBtn.setEnabled(false);
-                mBackBtn.setVisibility(View.INVISIBLE);
-
-                mNextBtn.setText("Siguiente");
-                mBackBtn.setText("");
-
-            } else if (i == mDots.length - 1) {
-
-                mNextBtn.setEnabled(true);
-                mBackBtn.setEnabled(true);
-                mBackBtn.setVisibility(View.VISIBLE);
-
-                mNextBtn.setText("Terminar");
-                mBackBtn.setText("Anterior");
-
-                mNextBtn.setOnClickListener(new View.OnClickListener() {
-
-                    @Override
-                    public void onClick(View v) {
-                        startMainActivity();
-                    }
-                });
-
-            } else {
-
-                mNextBtn.setEnabled(true);
-                mBackBtn.setEnabled(true);
-                mBackBtn.setVisibility(View.VISIBLE);
-
-                mNextBtn.setText("Siguiente");
-                mBackBtn.setText("Anterior");
             }
 
+            @Override
+            public void onPageSelected(int position) {
+
+                if (position == layouts.length-1){
+                    //Última página
+                    btnNext.setText("Comenzar");
+                    btnSkip.setVisibility(View.GONE);
+                }else{
+                    btnNext.setText("Siguiente");
+                    btnSkip.setVisibility(View.VISIBLE);
+                }
+                setDotStatus(position);
+
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
         }
 
+        );
+        setDotStatus(0);
+    }
 
-        @Override
-        public void onPageScrollStateChanged(int i) {
+    private boolean isFirstTimeStartApp(){
+        SharedPreferences ref = getApplicationContext().getSharedPreferences("IntroSliderApp", Context.MODE_PRIVATE);
+        return ref.getBoolean("FirstTimeStartFlag", true);
+    }
 
+    private void setFirstTimeStartStatus(boolean stt){
+        SharedPreferences ref = getApplicationContext().getSharedPreferences("IntroSliderApp", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor=ref.edit();
+        editor.putBoolean("FirstTimeStartFlag", stt);
+        editor.commit();
+    }
+
+    private void setDotStatus(int page){
+
+        layoutDot.removeAllViews();
+        dotstv = new TextView[layouts.length];
+        for (int i = 0; i < dotstv.length; i++){
+            dotstv[i] = new TextView(this);
+            dotstv[i].setText(Html.fromHtml("&#8226"));
+            dotstv[i].setTextSize(30);
+            dotstv[i].setTextColor(Color.parseColor("#a9b4bb"));
+            layoutDot.addView(dotstv[i]);
         }
-    };
+        //Pone el color del punto en blanco
+        if (dotstv.length>0){
+            dotstv[page].setTextColor(Color.parseColor("#ffffff"));
+        }
+
+    }
+
+
+    private void startLoginActivity(){
+
+        setFirstTimeStartStatus(false);
+        startActivity(new Intent(MainActivity.this,LoginActivity.class));
+        finish();
+
+    }
+
+
+    private void setStatusBarTransparent(){
+
+        if (Build.VERSION.SDK_INT >= 21){
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE|View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+            Window window = getWindow();
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(Color.TRANSPARENT);
+        }
+    }
 }
