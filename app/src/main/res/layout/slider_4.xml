@@ -12,7 +12,7 @@
         android:layout_width="150dp"
         android:layout_height="150dp"
         android:layout_gravity="center"
-        app:srcCompat="@drawable/eat_icon" />
+        android:src="@drawable/eat_icon" />
 
     <TextView
         android:layout_width="match_parent"
