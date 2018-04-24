@@ -23,6 +23,6 @@ public class SplashScreen extends Activity {
                 finish();
             }
 
-        },7000);
+        },5000);
     }
 }
